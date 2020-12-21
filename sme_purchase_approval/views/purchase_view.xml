@@ -9,7 +9,7 @@
                     <attribute name="string">Submit</attribute>
                   </xpath>
                   <field name="partner_id" position="before">
-                    <field name="user_status" />
+                    <field name="user_status" invisible="1"/>
                   </field>
                  <xpath expr="//form/header/button[@name='button_approve']" position="replace">
                      <button name="button_approve" type="object" states='to approve' string="Approve Order"
@@ -17,10 +17,16 @@
                  </xpath>
                  <xpath expr="//page[@name='purchase_delivery_invoice']" position="after">
                      <page string="Approver(s)" name="purchase_approvers">
-                            <field name="approver_ids" mode="tree,kanban">
+                            <field name="approver_ids" mode="tree,kanban"   attrs="{'readonly': [('state', 'in',('done','purchase'))]}">
                                 <tree editable="bottom" decoration-success="status=='purchase'" decoration-warning="status=='to approve'" decoration-danger="status=='refused'">
                                     <field name="user_id" string="Approver" attrs="{'readonly':[('status','!=','draft')]}"/>
                                     <field name="status"/>
+                                    <button name="action_create_activity" type="object"
+                                            icon="fa-paper-plane"
+                                            width="0.1"
+                                            role="img" title="Submit Approval"
+                                            attrs="{'invisible': [('status', 'not in', ('draft','sent'))]}"
+                                            />
                                 </tree>
                                 <kanban class="o_kanban_mobile">
                                     <field name="user_id"/>

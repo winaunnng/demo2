@@ -38,8 +38,6 @@ class PurchaseOrder(models.Model):
             order.user_status = order.approver_ids.filtered(lambda approver: approver.user_id == self.env.user).status
 
 
-
-
     def _get_user_approval_activities(self, user):
         domain = [
             ('res_model', '=', 'purchase.order'),
@@ -106,6 +104,10 @@ class PurchaseApprover(models.Model):
 
     def action_refuse(self):
         self.order_id.action_refuse(self)
+
+    def action_create_activity(self):
+        self.write({'status': 'to approve'})
+        self._create_activity()
 
     def _create_activity(self):
         for approver in self:
