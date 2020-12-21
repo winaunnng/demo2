@@ -88,7 +88,9 @@ class PurchaseApprover(models.Model):
     _name = 'purchase.approver'
     _description = 'Purchase Approver'
 
+
     user_id = fields.Many2one('res.users', string="User", required=True)
+    name = fields.Char(related='user_id.name')
     status = fields.Selection([
         ('draft', 'New'),
         ('sent', 'New'),
