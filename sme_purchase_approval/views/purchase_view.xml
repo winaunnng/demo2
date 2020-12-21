@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+       <record id="purchase_order_form_inherit" model="ir.ui.view">
+            <field name="name">purchase.order.form.inherit</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+                 <xpath expr="//form/header/button[@id='draft_confirm']" position="attributes">
+                    <attribute name="string">Submit</attribute>
+                  </xpath>
+                  <field name="partner_id" position="before">
+                    <field name="user_status" />
+                  </field>
+                 <xpath expr="//form/header/button[@name='button_approve']" position="replace">
+                     <button name="button_approve" type="object" states='to approve' string="Approve Order"
+                             class="oe_highlight" attrs="{'invisible':[('user_status','!=','to approve')]}"/>
+                 </xpath>
+                 <xpath expr="//page[@name='purchase_delivery_invoice']" position="after">
+                     <page string="Approver(s)" name="purchase_approvers">
+                            <field name="approver_ids" mode="tree,kanban">
+                                <tree editable="bottom" decoration-success="status=='purchase'" decoration-warning="status=='to approve'" decoration-danger="status=='refused'">
+                                    <field name="user_id" string="Approver" attrs="{'readonly':[('status','!=','draft')]}"/>
+                                    <field name="status"/>
+                                </tree>
+                                <kanban class="o_kanban_mobile">
+                                    <field name="user_id"/>
+                                    <field name="status"/>
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div class="oe_kanban_card oe_kanban_global_click">
+                                                <div class="o_kanban_content">
+                                                    <t t-esc="record.user_id.value"/>
+                                                    <t t-if="record.status.raw_value">
+                                                        <t t-set="classname" t-value="{'approved': 'badge-success', 'pending': 'badge-warning', 'refused': 'badge-danger'}[record.status.raw_value] || 'badge-light'"/>
+                                                        <span t-esc="record.status.raw_value" t-attf-class="float-right badge-pill {{ classname }}"/>
+                                                    </t>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                                <form>
+                                    <group>
+                                        <field name="user_id"/>
+                                    </group>
+                                </form>
+                            </field>
+                     </page>
+                </xpath>
+            </field>
+       </record>
+
+</odoo>
