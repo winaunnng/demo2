@@ -9,10 +9,10 @@
                     <attribute name="string">Submit</attribute>
                   </xpath>
                   <field name="partner_id" position="before">
-                    <field name="user_status" invisible="1"/>
+                    <field name="user_status" />
                   </field>
                  <xpath expr="//form/header/button[@name='button_approve']" position="replace">
-                     <button name="button_approve" type="object" states='to approve' string="Approve Order"
+                     <button name="button_approve" type="object" states='to approve' string="Approve Order" groups="purchase.group_purchase_manager"
                              class="oe_highlight" attrs="{'invisible':[('user_status','!=','to approve')]}"/>
                  </xpath>
                  <xpath expr="//page[@name='purchase_delivery_invoice']" position="after">
@@ -53,6 +53,28 @@
                             </field>
                      </page>
                 </xpath>
+            </field>
+       </record>
+
+      <record id="purchase_order_tree_approver_inheirt" model="ir.ui.view">
+            <field name="name">purchase.order.tree.approver.inherit</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_tree"/>
+            <field name="arch" type="xml">
+                <field name="origin" position="after">
+                      <field name="approver_ids" widget="many2many_tags" optional="show"/>
+                </field>
+            </field>
+       </record>
+
+        <record id="purchase_order_view_tree_approver_inheirt" model="ir.ui.view">
+            <field name="name">purchase.order.view.tree.approver.inherit</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+            <field name="arch" type="xml">
+                <field name="origin" position="after">
+                      <field name="approver_ids" widget="many2many_tags" optional="show"/>
+                </field>
             </field>
        </record>
 
