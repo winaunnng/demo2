@@ -18,6 +18,7 @@ class PurchaseOrder(models.Model):
         ('draft', 'RFQ'),
         ('sent', 'RFQ Sent'),
         ('to approve', 'To Approve'),
+        ('refused', 'Refused'),
         ('purchase', 'Purchase Order'),
         ('done', 'Locked'),
         ('cancel', 'Cancelled')
@@ -28,6 +29,7 @@ class PurchaseOrder(models.Model):
         ('draft', 'RFQ'),
         ('sent', 'RFQ Sent'),
         ('to approve', 'To Approve'),
+        ('refused', 'Refused'),
         ('purchase', 'Purchase Order'),
         ('done', 'Locked'),
         ('cancel', 'Cancel')], compute="_compute_user_status")
@@ -83,6 +85,20 @@ class PurchaseOrder(models.Model):
             order.write({'state': 'to approve'})
         return True
 
+    def button_refuse(self, force=False,approver=None):
+        if not isinstance(approver, models.BaseModel):
+            approver = self.mapped('approver_ids').filtered(
+                lambda approver: approver.user_id == self.env.user
+            )
+        approver.write({'status': 'refused'})
+        self.sudo()._get_user_approval_activities(user=self.env.user).action_feedback()
+
+        status_lst = self.mapped('approver_ids.status')
+        approvers = len(status_lst)
+        result = {}
+        if status_lst.count('refused') == approvers:
+            self.write({'state': 'refused'})
+        return result
 
 class PurchaseApprover(models.Model):
     _name = 'purchase.approver'
@@ -96,6 +112,7 @@ class PurchaseApprover(models.Model):
         ('sent', 'New'),
         ('to approve', 'To Approve'),
         ('purchase', 'Approved'),
+        ('refused', 'Refused'),
         ('done', 'Locked'),
         ('cancel', 'Cancelled')
        ], string="Status", default="draft", readonly=True)
