@@ -9,11 +9,14 @@
                     <attribute name="string">Submit</attribute>
                   </xpath>
                   <field name="partner_id" position="before">
-                    <field name="user_status" />
+                    <field name="user_status" invisible="1"/>
                   </field>
                  <xpath expr="//form/header/button[@name='button_approve']" position="replace">
                      <button name="button_approve" type="object" states='to approve' string="Approve Order" groups="purchase.group_purchase_manager"
-                             class="oe_highlight" attrs="{'invisible':[('user_status','!=','to approve')]}"/>
+                             class="oe_highlight" attrs="{'invisible':[('user_status','not in',('to approve','refused'))]}"/>
+                     <button name="button_refuse" type="object" states='to approve' string="Refuse Order" groups="purchase.group_purchase_manager"
+                             class="oe_highlight" attrs="{'invisible':[('user_status','not in',('to approve','refused'))]}"/>
+
                  </xpath>
                  <xpath expr="//page[@name='purchase_delivery_invoice']" position="after">
                      <page string="Approver(s)" name="purchase_approvers">
