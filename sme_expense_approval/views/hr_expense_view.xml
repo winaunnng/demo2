@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+       <record id="view_hr_expense_sheet_form_inherit" model="ir.ui.view">
+            <field name="name">hr.expense.sheet.form.inherit</field>
+            <field name="model">hr.expense.sheet</field>
+            <field name="inherit_id" ref="hr_expense.view_hr_expense_sheet_form"/>
+            <field name="arch" type="xml">
+
+                  <field name="employee_id" position="before">
+                    <field name="user_status" invisible="1"/>
+                  </field>
+
+                 <xpath expr="//page[@name='other_info']" position="before">
+                     <page string="Approver(s)" name="purchase_approvers">
+                            <field name="approver_ids" mode="tree,kanban"   attrs="{'readonly': [('state', 'in',('done','approve'))]}">
+                                <tree editable="bottom" decoration-success="status=='approve'" decoration-warning="status=='submit'" decoration-danger="status=='cancel'">
+                                    <field name="user_id" string="Approver" attrs="{'readonly':[('status','!=','draft')]}"/>
+                                    <field name="status"/>
+                                    <button name="action_create_activity" type="object"
+                                            icon="fa-paper-plane"
+                                            width="0.1"
+                                            role="img" title="Submit Approval"
+                                            attrs="{'invisible': [('status', 'not in', ('draft','sent'))]}"
+                                            />
+                                </tree>
+                                <kanban class="o_kanban_mobile">
+                                    <field name="user_id"/>
+                                    <field name="status"/>
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div class="oe_kanban_card oe_kanban_global_click">
+                                                <div class="o_kanban_content">
+                                                    <t t-esc="record.user_id.value"/>
+                                                    <t t-if="record.status.raw_value">
+                                                        <t t-set="classname" t-value="{'approved': 'badge-success', 'pending': 'badge-warning', 'cancel': 'badge-danger'}[record.status.raw_value] || 'badge-light'"/>
+                                                        <span t-esc="record.status.raw_value" t-attf-class="float-right badge-pill {{ classname }}"/>
+                                                    </t>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                                <form>
+                                    <group>
+                                        <field name="user_id"/>
+                                    </group>
+                                </form>
+                            </field>
+                     </page>
+                </xpath>
+            </field>
+       </record>
+
+      <record id="view_hr_expense_sheet_tree_inherit" model="ir.ui.view">
+            <field name="name">hr.expense.sheet.tree.inherit</field>
+            <field name="model">hr.expense.sheet</field>
+            <field name="inherit_id" ref="hr_expense.view_hr_expense_sheet_tree"/>
+            <field name="arch" type="xml">
+                <field name="accounting_date" position="after">
+                      <field name="approver_ids" widget="many2many_tags" optional="show"/>
+                </field>
+            </field>
+       </record>
+
+</odoo>
