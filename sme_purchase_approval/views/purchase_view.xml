@@ -13,15 +13,15 @@
                   </field>
                  <xpath expr="//form/header/button[@name='button_approve']" position="replace">
                      <button name="button_approve" type="object" states='to approve' string="Approve Order" groups="purchase.group_purchase_manager"
-                             class="oe_highlight" attrs="{'invisible':[('user_status','not in',('to approve','refused'))]}"/>
+                             class="oe_highlight" attrs="{'invisible':[('user_status','!=','to approve')]}"/>
                      <button name="button_refuse" type="object" states='to approve' string="Refuse Order" groups="purchase.group_purchase_manager"
-                             class="oe_highlight" attrs="{'invisible':[('user_status','not in',('to approve','refused'))]}"/>
+                             class="oe_highlight" attrs="{'invisible':[('user_status','!=','to approve')]}"/>
 
                  </xpath>
                  <xpath expr="//page[@name='purchase_delivery_invoice']" position="after">
                      <page string="Approver(s)" name="purchase_approvers">
                             <field name="approver_ids" mode="tree,kanban"   attrs="{'readonly': [('state', 'in',('done','purchase'))]}">
-                                <tree editable="bottom" decoration-success="status=='purchase'" decoration-warning="status=='to approve'" decoration-danger="status=='refused'">
+                                <tree editable="bottom" decoration-success="status=='purchase'" decoration-warning="status=='to approve'" decoration-danger="status=='cancel'">
                                     <field name="user_id" string="Approver" attrs="{'readonly':[('status','!=','draft')]}"/>
                                     <field name="status"/>
                                     <button name="action_create_activity" type="object"
@@ -40,7 +40,7 @@
                                                 <div class="o_kanban_content">
                                                     <t t-esc="record.user_id.value"/>
                                                     <t t-if="record.status.raw_value">
-                                                        <t t-set="classname" t-value="{'approved': 'badge-success', 'pending': 'badge-warning', 'refused': 'badge-danger'}[record.status.raw_value] || 'badge-light'"/>
+                                                        <t t-set="classname" t-value="{'approved': 'badge-success', 'pending': 'badge-warning', 'cancel': 'badge-danger'}[record.status.raw_value] || 'badge-light'"/>
                                                         <span t-esc="record.status.raw_value" t-attf-class="float-right badge-pill {{ classname }}"/>
                                                     </t>
                                                 </div>
