@@ -18,6 +18,7 @@
 
     'data': [
         'security/ir.model.access.csv',
+        'wizard/purchase_refuse_reason_views.xml',
         'views/purchase_view.xml',
         'data/mail_activity_data.xml',
 

@@ -14,8 +14,10 @@
                  <xpath expr="//form/header/button[@name='button_approve']" position="replace">
                      <button name="button_approve" type="object" states='to approve' string="Approve Order" groups="purchase.group_purchase_manager"
                              class="oe_highlight" attrs="{'invisible':[('user_status','!=','to approve')]}"/>
-                     <button name="button_refuse" type="object" states='to approve' string="Refuse Order" groups="purchase.group_purchase_manager"
+                     <button name="%(sme_purchase_approval.purchase_refuse_wizard_action)d"  type="action" states='to approve' string="Refuse Order" groups="purchase.group_purchase_manager"
                              class="oe_highlight" attrs="{'invisible':[('user_status','!=','to approve')]}"/>
+
+                    <!--name="button_refuse"-->
 
                  </xpath>
                  <xpath expr="//page[@name='purchase_delivery_invoice']" position="after">

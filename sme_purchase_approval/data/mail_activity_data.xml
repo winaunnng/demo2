@@ -7,5 +7,12 @@
             <field name="sequence">4</field>
             <field name="res_model_id" ref="purchase.model_purchase_order"/>
         </record>
+
+        <template id="purchase_template_refuse_reason">
+            <p>Your Purchase Order <t t-esc="name"/> has been refused</p>
+            <ul class="o_timeline_tracking_value_list">
+                <li>Reason : <t t-esc="reason"/></li>
+            </ul>
+        </template>
     </data>
 </odoo>

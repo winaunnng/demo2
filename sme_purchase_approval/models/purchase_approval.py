@@ -1,17 +1,10 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
-
 class PurchaseOrder(models.Model):
     _inherit = "purchase.order"
-
-    @api.model
-    def _read_group_status(self, stages, domain, order):
-        status_list = dict(self._fields['state'].selection).keys()
-        return status_list
 
     approver_ids = fields.One2many('purchase.approver', 'order_id', string="Approvers")
     state = fields.Selection([
@@ -72,25 +65,19 @@ class PurchaseOrder(models.Model):
             approvers = self.mapped('approver_ids').filtered(lambda approver: approver.status in ('draft','sent'))
             approvers._create_activity()
             approvers.write({'status': 'to approve'})
-            # Deal with double validation process
-            # if order.company_id.po_double_validation == 'one_step'\
-            #         or (order.company_id.po_double_validation == 'two_step'\
-            #             and order.amount_total < self.env.company.currency_id._convert(
-            #                 order.company_id.po_double_validation_amount, order.currency_id, order.company_id, order.date_order or fields.Date.today()))\
-            #         or order.user_has_groups('purchase.group_purchase_manager'):
-            #     order.button_approve()
-            # else:
             order.write({'state': 'to approve'})
         return True
 
-    def button_refuse(self, force=False,approver=None):
+    def refuse_order(self,reason,force=False,approver=None,):
         if not isinstance(approver, models.BaseModel):
             approver = self.mapped('approver_ids').filtered(
                 lambda approver: approver.user_id == self.env.user
             )
-        approver.write({'status': 'cancel'})
-        self.sudo()._get_user_approval_activities(user=self.env.user).action_feedback()
-
+        if approver:
+            approver.write({'status': 'cancel'})
+            self.sudo()._get_user_approval_activities(user=self.env.user).action_feedback()
+            self.message_post_with_view('sme_purchase_approval.purchase_template_refuse_reason',
+                                   values={'reason': reason,'name': self.name})
         status_lst = self.mapped('approver_ids.status')
         approvers = len(status_lst)
         result = {}
@@ -117,9 +104,6 @@ class PurchaseApprover(models.Model):
 
     def button_approve(self):
         self.order_id.button_approve(self)
-
-    def action_refuse(self):
-        self.order_id.action_refuse(self)
 
     def action_create_activity(self):
         self.write({'status': 'to approve'})
