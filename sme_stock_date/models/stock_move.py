@@ -9,43 +9,6 @@ class StockMove(models.Model):
     _inherit = "stock.move"
 
 
-    #original function - just copy not to get test err on sh
-    @api.model
-    def _get_valued_types(self):
-        """Returns a list of `valued_type` as strings. During `action_done`, we'll call
-        `_is_[valued_type]'. If the result of this method is truthy, we'll consider the move to be
-        valued.
-
-        :returns: a list of `valued_type`
-        :rtype: list
-        """
-        return ['in', 'out', 'dropshipped', 'dropshipped_returned']
-
-    # original function - just copy not to get test err on sh
-    def _is_in(self):
-        """Check if the move should be considered as entering the company so that the cost method
-        will be able to apply the correct logic.
-
-        :returns: True if the move is entering the company else False
-        :rtype: bool
-        """
-        self.ensure_one()
-        if self._get_in_move_lines():
-            return True
-        return False
-
-    # original function - just copy not to get test err on sh
-    def _is_out(self):
-        """Check if the move should be considered as leaving the company so that the cost method
-        will be able to apply the correct logic.
-
-        :returns: True if the move is leaving the company else False
-        :rtype: bool
-        """
-        self.ensure_one()
-        if self._get_out_move_lines():
-            return True
-        return False
 
     def _stock_account_before_action_done(self):
         # Init a dict that will group the moves by valuation type, according to `move._is_valued_type`.

@@ -17,7 +17,7 @@
     'category': 'Inventory Management',
     'version': '0.1',
 
-    'depends': ['stock'],
+    'depends': ['stock','stock_account'],
 
     'data': [
 
