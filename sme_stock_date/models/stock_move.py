@@ -9,7 +9,6 @@ class StockMove(models.Model):
     _inherit = "stock.move"
 
 
-
     def _stock_account_before_action_done(self):
         # Init a dict that will group the moves by valuation type, according to `move._is_valued_type`.
         valued_moves = {valued_type: self.env['stock.move'] for valued_type in self._get_valued_types()}

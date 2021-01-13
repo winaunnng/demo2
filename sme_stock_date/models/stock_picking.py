@@ -6,7 +6,7 @@ from odoo import api, fields, models,exceptions, SUPERUSER_ID, _
 class Picking(models.Model):
     _inherit = "stock.picking"
 
-    date_done = fields.Datetime('Date of Transfer', copy=False, readonly=False,tracking=True, help="Date at which the transfer has been processed or cancelled.")
+    date_done = fields.Datetime('Date of Transfer',default=fields.Datetime.now,copy=False, readonly=False,tracking=True, help="Date at which the transfer has been processed or cancelled.")
 
     # new constrains
     @api.constrains('date_done')
