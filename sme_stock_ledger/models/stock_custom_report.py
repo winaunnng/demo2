@@ -1093,26 +1093,26 @@ class StockCustomReport(models.AbstractModel):
             existing_manager = self.env['stock.report.manager'].create({'report_name': self._name, 'company_id': selected_companies and selected_companies[0] or False})
         return existing_manager
 
-    # @api.model
-    # def format_value(self, amount, currency=False, blank_if_zero=False):
-    #     ''' Format amount to have a monetary display (with a currency symbol).
-    #     E.g: 1000 => 1000.0 $
-    #
-    #     :param amount:          A number.
-    #     :param currency:        An optional res.currency record.
-    #     :param blank_if_zero:   An optional flag forcing the string to be empty if amount is zero.
-    #     :return:                The formatted amount as a string.
-    #     '''
-    #     currency_id = currency or self.env.company.currency_id
-    #     if currency_id.is_zero(amount):
-    #         if blank_if_zero:
-    #             return ''
-    #         # don't print -0.0 in reports
-    #         amount = abs(amount)
-    #
-    #     if self.env.context.get('no_format'):
-    #         return amount
-    #     return formatLang(self.env, amount, currency_obj=currency_id)
+    @api.model
+    def format_value(self, amount, currency=False, blank_if_zero=False):
+        ''' Format amount to have a monetary display (with a currency symbol).
+        E.g: 1000 => 1000.0 $
+
+        :param amount:          A number.
+        :param currency:        An optional res.currency record.
+        :param blank_if_zero:   An optional flag forcing the string to be empty if amount is zero.
+        :return:                The formatted amount as a string.
+        '''
+        currency_id = currency or self.env.company.currency_id
+        if currency_id.is_zero(amount):
+            if blank_if_zero:
+                return ''
+            # don't print -0.0 in reports
+            amount = abs(amount)
+
+        if self.env.context.get('no_format'):
+            return amount
+        return formatLang(self.env, amount, currency_obj=currency_id)
 
     @api.model
     def _format_sml_name(self, move_ref, move_name):

@@ -786,7 +786,11 @@ var stockReportsWidget = AbstractAction.extend({
         var offset = $line.data('offset') || 0;
         var progress = $line.data('progress') || 0;
         var remaining = $line.data('remaining') || 0;
-        var options = _.extend({}, this.report_options, {lines_offset: offset, lines_progress: progress, lines_remaining: remaining});
+        var remaining = $line.data('remaining') || 0;
+        var amount_init_progress = $line.data('amount_init_progress') || 0;
+        var amount_progress = $line.data('amount_progress') || 0;
+        var options = _.extend({}, this.report_options, {lines_offset: offset, lines_progress: progress,
+        lines_remaining: remaining,line_amount_init_progress:amount_init_progress,line_amount_progress:amount_progress});
         var self = this;
         this._rpc({
                 model: this.report_model,
