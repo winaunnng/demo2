@@ -104,7 +104,9 @@ class ReportStockLedger(models.AbstractModel):
                 stock_move_line.product_id        AS product_id,
                 'sum'                               AS key,
                 ROUND(CASE WHEN stock_valuation_layer.quantity >= 0 THEN stock_valuation_layer.quantity ELSE 0 END )   AS debit,
-                ROUND(CASE WHEN stock_valuation_layer.quantity <= 0 THEN (0-stock_valuation_layer.quantity) ELSE 0 END  )  AS credit
+                ROUND(CASE WHEN stock_valuation_layer.quantity <= 0 THEN (0-stock_valuation_layer.quantity) ELSE 0 END  )  AS credit,
+                stock_valuation_layer.unit_cost As cost,
+                stock_valuation_layer.value As amount                
             FROM %s
             LEFT JOIN stock_move ON stock_move.id = stock_move_line.move_id
             LEFT JOIN stock_valuation_layer ON stock_valuation_layer.stock_move_id = stock_move.id
@@ -121,7 +123,9 @@ class ReportStockLedger(models.AbstractModel):
                            stock_move_line.product_id  AS product_id,
                            \'sum\' as key,
                            0.0 as debit,
-                           stock_move_line.qty_done    AS credit
+                           stock_move_line.qty_done    AS credit,
+                           0.0 As cost,
+                           0.0 As amount
                        FROM %s
                        LEFT JOIN stock_move ON stock_move.id = stock_move_line.move_id
                        LEFT JOIN stock_valuation_layer ON stock_valuation_layer.stock_move_id = stock_move.id
@@ -140,7 +144,9 @@ class ReportStockLedger(models.AbstractModel):
                            stock_move_line.product_id AS product_id,
                            \'sum\' as key,       
                            stock_move_line.qty_done AS debit,
-                           0.0 as credit                     
+                           0.0 AS credit,
+                           0.0 AS cost,
+                           0.0 As amount                     
                        FROM %s
                        LEFT JOIN stock_move ON stock_move.id = stock_move_line.move_id
                        LEFT JOIN stock_valuation_layer ON stock_valuation_layer.stock_move_id = stock_move.id
@@ -165,7 +171,9 @@ class ReportStockLedger(models.AbstractModel):
                 stock_move_line.product_id        AS groupby,
                 'initial_balance'                   AS key,
                 ROUND(CASE WHEN stock_valuation_layer.quantity >= 0 THEN stock_valuation_layer.quantity ELSE 0 END ) AS debit,
-                ROUND(CASE WHEN stock_valuation_layer.quantity <= 0 THEN (0-stock_valuation_layer.quantity) ELSE 0 END )  AS credit
+                ROUND(CASE WHEN stock_valuation_layer.quantity <= 0 THEN (0-stock_valuation_layer.quantity) ELSE 0 END )  AS credit,
+                stock_valuation_layer.unit_cost As cost,
+                stock_valuation_layer.value As amount            
             FROM %s
             LEFT JOIN stock_move ON stock_move.id = stock_move_line.move_id
             INNER JOIN stock_valuation_layer ON stock_valuation_layer.stock_move_id = stock_move.id
@@ -182,12 +190,14 @@ class ReportStockLedger(models.AbstractModel):
                            stock_move_line.product_id        AS product_id,
                            'initial_balance'                 AS key,
                            0.0 as debit,
-                           stock_move_line.qty_done    AS credit
+                           stock_move_line.qty_done    AS credit,
+                           stock_valuation_layer.unit_cost As cost,
+                           stock_valuation_layer.value As amount               
                        FROM %s
                        LEFT JOIN stock_move ON stock_move.id = stock_move_line.move_id
                        LEFT JOIN stock_valuation_layer ON stock_valuation_layer.stock_move_id = stock_move.id
-                       LEFT JOIN stock_location source_location           ON source_location.id = stock_move_line.location_id
-                       LEFT JOIN stock_location dest_location           ON dest_location.id = stock_move_line.location_dest_id
+                       LEFT JOIN stock_location source_location ON source_location.id = stock_move_line.location_id
+                       LEFT JOIN stock_location dest_location ON dest_location.id = stock_move_line.location_dest_id
                        WHERE source_location.usage = 'internal' AND dest_location.usage = 'internal' AND %s    
                            ''' % (tables, where_clause))
 
@@ -197,10 +207,12 @@ class ReportStockLedger(models.AbstractModel):
             params += (tuple(locations or [0]),)
             queries.append('''
                        SELECT
-                           stock_move_line.product_id        AS product_id,
-                           'initial_balance'                 AS key,
-                           stock_move_line.qty_done    AS debit,
-                           0.0 as credit                       
+                          stock_move_line.product_id        AS product_id,
+                          'initial_balance'                 AS key,
+                          stock_move_line.qty_done    AS debit,
+                          0.0 as credit,
+                          stock_valuation_layer.unit_cost As cost,
+                          stock_valuation_layer.value As amount                                        
                        FROM %s
                        LEFT JOIN stock_move ON stock_move.id = stock_move_line.move_id
                        LEFT JOIN stock_valuation_layer ON stock_valuation_layer.stock_move_id = stock_move.id
@@ -214,7 +226,9 @@ class ReportStockLedger(models.AbstractModel):
              A.key as key,
              sum(A.debit) as debit,
              sum(A.credit) as credit,
-             sum(A.debit - A.credit) as balance 
+             sum(A.debit - A.credit) as balance,
+             sum(A.cost) as cost,
+             sum(A.amount) as amount
              FROM ( ''' + ' UNION ALL '.join(queries) + ''' )A 
              GROUP BY A.product_id,A.key '''
 
@@ -251,7 +265,7 @@ class ReportStockLedger(models.AbstractModel):
             if locations:
                 where_clause += ' AND (stock_move_line.location_id IN %s OR stock_move_line.location_dest_id IN %s)'
                 params += (tuple(locations or [0]),tuple(locations or [0]),)
-
+        where_clause += ' AND (layer.quantity != 0.0 )'
         queries.append('''
             SELECT
                 stock_move_line.id,
@@ -268,6 +282,8 @@ class ReportStockLedger(models.AbstractModel):
                 ROUND(CASE WHEN layer.quantity >= 0 THEN layer.quantity ELSE 0 END )  AS debit,
                 ROUND(CASE WHEN layer.quantity <= 0 THEN (0-layer.quantity) ELSE 0 END )  AS credit,
                 ROUND(layer.quantity) AS balance,
+                layer.unit_cost As cost,
+                layer.value As amount,                
                 stock_move_line__move_id.name           AS move_name,                
                 partner.name                            AS partner_name,              
                 source_location.complete_name           AS source_name,
@@ -278,7 +294,7 @@ class ReportStockLedger(models.AbstractModel):
             LEFT JOIN uom_uom uom               ON uom.id = stock_move_line.product_uom_id
             LEFT JOIN stock_location source_location           ON source_location.id = stock_move_line.location_id
             LEFT JOIN stock_location dest_location           ON dest_location.id = stock_move_line.location_dest_id
-            LEFT JOIN stock_move ON stock_move.id = stock_move_line.move_id              
+            LEFT JOIN stock_move ON stock_move.id = stock_move_line.move_id 
             INNER JOIN stock_valuation_layer layer           ON layer.stock_move_id = stock_move.id 
             LEFT JOIN stock_picking picking           ON picking.id = stock_move.picking_id
             LEFT JOIN res_partner partner               ON partner.id = picking.partner_id                
@@ -309,6 +325,8 @@ class ReportStockLedger(models.AbstractModel):
                          stock_move_line.qty_done AS debit,
                          0.0 AS credit,
                          stock_move_line.qty_done AS balance,
+                         0.0 As cost,
+                         0.0 As amount, 
                          stock_move_line__move_id.name           AS move_name,
                          partner.name                            AS partner_name,
                          source_location.complete_name           AS source_name,
@@ -345,6 +363,8 @@ class ReportStockLedger(models.AbstractModel):
                        0.0 AS debit,
                        stock_move_line.qty_done AS credit,
                        0-stock_move_line.qty_done AS balance,
+                       0.0 As cost,
+                       0.0 As amount, 
                        stock_move_line__move_id.name           AS move_name,                
                        partner.name                            AS partner_name,              
                        source_location.complete_name           AS source_name,
@@ -380,6 +400,8 @@ class ReportStockLedger(models.AbstractModel):
                        stock_move_line.qty_done AS debit,
                        stock_move_line.qty_done AS credit,
                        0.0 AS balance,
+                       0.0 As cost,
+                       0.0 As amount,
                        stock_move_line__move_id.name           AS move_name,
                        partner.name                            AS partner_name,
                        source_location.complete_name           AS source_name,
@@ -459,7 +481,7 @@ class ReportStockLedger(models.AbstractModel):
     ####################################################
 
     @api.model
-    def _get_report_line_product(self, options, product, initial_balance, debit, credit, balance):
+    def _get_report_line_product(self, options, product, initial_balance, debit, credit, balance,cost,initial_amount,amount,amount_balance):
         company_currency = self.env.company.currency_id
         unfold_all = self._context.get('print_mode') and not options.get('unfolded_lines')
         columns = [
@@ -467,7 +489,10 @@ class ReportStockLedger(models.AbstractModel):
             {'name': debit, 'class': 'number'},
             {'name': credit, 'class': 'number'},
             {'name': balance, 'class': 'number'},
-
+            {'name': cost, 'class': 'number'},
+            {'name': initial_amount, 'class': 'number'},
+            {'name': amount, 'class': 'number'},
+            {'name': amount_balance, 'class': 'number'}
         ]
 
         return {
@@ -482,7 +507,7 @@ class ReportStockLedger(models.AbstractModel):
         }
 
     @api.model
-    def _get_report_line_move_line(self, options, product, sml, cumulated_init_balance, cumulated_balance):
+    def _get_report_line_move_line(self, options, product, sml, cumulated_init_balance, cumulated_balance,cumulated_amount,cumulated_amount_balance):
         caret_type = 'stock.move'
 
         columns = [
@@ -499,6 +524,10 @@ class ReportStockLedger(models.AbstractModel):
         ]
 
         columns.append({'name': cumulated_balance, 'class': 'number'})
+        columns.append({'name': sml['cost'], 'class': 'number'})
+        columns.append({'name': cumulated_amount, 'class': 'number'})
+        columns.append({'name': sml['amount'], 'class': 'number'})
+        columns.append({'name': cumulated_amount_balance, 'class': 'number'})
         return {
             'id': sml['id'],
             'parent_id': 'product_%s' % product.id,
@@ -510,12 +539,13 @@ class ReportStockLedger(models.AbstractModel):
         }
 
     @api.model
-    def _get_report_line_load_more(self, options, product, offset, remaining, progress):
+    def _get_report_line_load_more(self, options, product, offset, remaining, progress,progress_amount):
         return {
             'id': 'loadmore_%s' % product.id,
             'offset': offset,
             'progress': progress,
             'remaining': remaining,
+            'amount_progress':progress_amount,
             'class': 'o_account_reports_load_more text-center',
             'parent_id': 'account_%s' % product.id,
             'name': _('Load more... (%s remaining)' % remaining),
@@ -524,12 +554,16 @@ class ReportStockLedger(models.AbstractModel):
         }
 
     @api.model
-    def _get_report_line_total(self, options, initial_balance, debit, credit, balance):
+    def _get_report_line_total(self, options, initial_balance, debit, credit, balance,cost,initial_amount,amount,total_amount):
         columns = [
             {'name': initial_balance, 'class': 'number'},
             {'name': debit, 'class': 'number'},
             {'name': credit, 'class': 'number'},
             {'name': balance, 'class': 'number'},
+            {'name': cost, 'class': 'number'},
+            {'name': initial_amount, 'class': 'number'},
+            {'name': amount, 'class': 'number'},
+            {'name': total_amount, 'class': 'number'},
         ]
         return {
             'id': 'stock_ledger_total_%s' % self.env.company.id,
@@ -552,10 +586,10 @@ class ReportStockLedger(models.AbstractModel):
         expanded_product= line_id and self.env['product.product'].browse(int(line_id[8:]))
         products_results = self._do_query(options, expanded_product=expanded_product)
 
-        total_initial_balance = total_debit = total_credit = total_balance = 0.0
+        total_initial_balance = total_debit = total_credit = total_balance = total_initial_amount = total_amount = 0.0
+
         for product, results in products_results:
             is_unfolded = 'product_%s' % product.id in options['unfolded_lines']
-
             # res.partner record line.
             product_sum = results.get('sum', {})
             product_init_bal = results.get('initial_balance', {})
@@ -565,14 +599,28 @@ class ReportStockLedger(models.AbstractModel):
             credit = product_sum.get('credit', 0.0)
             balance = initial_balance + product_sum.get('balance', 0.0)
 
-            lines.append(self._get_report_line_product(options, product, initial_balance, debit, credit, balance))
+            if product_init_bal.get('amount', 0.0) :
+                initial_amount = product_init_bal.get('amount', 0.0)
+            else:
+                initial_amount = 0.0
+
+            cost = ''
+            amount = product_sum.get('amount', 0.0)
+
+            amount_balance = initial_amount + amount
+
+            lines.append(self._get_report_line_product(options, product, initial_balance, debit, credit, balance,cost,initial_amount,amount,amount_balance))
 
             total_initial_balance += initial_balance
             total_debit += debit
             total_credit += credit
             total_balance += balance
+
+            total_initial_amount += initial_amount
+            total_amount += amount_balance
             if unfold_all or is_unfolded:
                 cumulated_balance = initial_balance
+                cumulated_amount_balance = initial_amount
 
                 # account.move.line record lines.
                 smls = results.get('lines', [])
@@ -587,7 +635,11 @@ class ReportStockLedger(models.AbstractModel):
 
                     cumulated_init_balance = cumulated_balance
                     cumulated_balance += sml['balance'] or 0.0
-                    lines.append(self._get_report_line_move_line(options, product, sml, cumulated_init_balance, cumulated_balance))
+
+                    cumulated_init_amount = cumulated_amount_balance
+                    cumulated_amount_balance += sml['amount'] or 0.0
+
+                    lines.append(self._get_report_line_move_line(options, product, sml, cumulated_init_balance, cumulated_balance,cumulated_init_amount,cumulated_amount_balance))
 
                     load_more_remaining -= 1
                     load_more_counter -= 1
@@ -600,24 +652,27 @@ class ReportStockLedger(models.AbstractModel):
                         self.MAX_LINES,
                         load_more_remaining,
                         cumulated_balance,
+                        cumulated_amount_balance
                     ))
 
         if not line_id:
             # Report total line.
-            print(total_initial_balance,total_debit,total_credit,total_balance,'**************************=========')
-
             lines.append(self._get_report_line_total(
                 options,
                 total_initial_balance,
                 total_debit,
                 total_credit,
-                total_balance
+                total_balance,
+                None,
+                total_initial_amount,
+                0.0,
+                total_amount
+
             ))
-            # print(lines,"*********==========")
         return lines
 
     @api.model
-    def _load_more_lines(self, options, line_id, offset, load_more_remaining, progress):
+    def _load_more_lines(self, options, line_id, offset, load_more_remaining, progress,progress_amount):
         ''' Get lines for an expanded line using the load more.
         :param options: The report options.
         :return:        A list of lines, each one represented by a dictionary.
@@ -638,9 +693,10 @@ class ReportStockLedger(models.AbstractModel):
 
             cumulated_init_balance = progress
             progress += sml['balance']
+            cumulated_init_amount = progress_amount
+            progress_amount += sml['amount']
 
-            # account.move.line record line.
-            lines.append(self._get_report_line_move_line(options, expanded_product, sml, cumulated_init_balance, progress))
+            lines.append(self._get_report_line_move_line(options, expanded_product, sml, cumulated_init_balance, progress,cumulated_init_amount,progress_amount))
 
             offset += 1
             load_more_remaining -= 1
@@ -654,6 +710,7 @@ class ReportStockLedger(models.AbstractModel):
                 offset,
                 load_more_remaining,
                 progress,
+                progress_amount
             ))
         return lines
 
@@ -670,6 +727,10 @@ class ReportStockLedger(models.AbstractModel):
             {'name': _('Initial Balance'), 'class': 'number'},
             {'name': _('In'), 'class': 'number'},
             {'name': _('Out'), 'class': 'number'},
+            {'name': _('Balance'), 'class': 'number'},
+            {'name': _('Cost'), 'class': 'number'},
+            {'name': _('Initial Amount'), 'class': 'number'},
+            {'name': _('Amount'), 'class': 'number'},
             {'name': _('Balance'), 'class': 'number'}
         ]
 
@@ -680,10 +741,12 @@ class ReportStockLedger(models.AbstractModel):
         offset = int(options.get('lines_offset', 0))
         remaining = int(options.get('lines_remaining', 0))
         balance_progress = float(options.get('lines_progress', 0))
+        # amount_init_progress = float(options.get('line_amount_init_progress', 0))
+        amount_progress = float(options.get('line_amount_progress', 0))
 
         if offset > 0:
             # Case a line is expanded using the load more.
-            return self._load_more_lines(options, line_id, offset, remaining, balance_progress)
+            return self._load_more_lines(options, line_id, offset, remaining, balance_progress,amount_progress)
         else:
             # Case the whole report is loaded or a line is expanded for the first time.
             return self._get_stock_ledger_lines(options, line_id=line_id)
