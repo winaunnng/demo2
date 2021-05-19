@@ -489,10 +489,10 @@ class ReportStockLedger(models.AbstractModel):
             {'name': debit, 'class': 'number'},
             {'name': credit, 'class': 'number'},
             {'name': balance, 'class': 'number'},
-            {'name': cost, 'class': 'number'},
-            {'name': initial_amount, 'class': 'number'},
-            {'name': amount, 'class': 'number'},
-            {'name': amount_balance, 'class': 'number'}
+            {'name': ' ', 'class': 'number'},
+            {'name': self.format_value(initial_amount), 'class': 'number'},
+            {'name': self.format_value(amount), 'class': 'number'},
+            {'name': self.format_value(amount_balance), 'class': 'number'}
         ]
 
         return {
@@ -524,10 +524,10 @@ class ReportStockLedger(models.AbstractModel):
         ]
 
         columns.append({'name': cumulated_balance, 'class': 'number'})
-        columns.append({'name': sml['cost'], 'class': 'number'})
-        columns.append({'name': cumulated_amount, 'class': 'number'})
-        columns.append({'name': sml['amount'], 'class': 'number'})
-        columns.append({'name': cumulated_amount_balance, 'class': 'number'})
+        columns.append({'name': self.format_value(sml['cost']), 'class': 'number'})
+        columns.append({'name': self.format_value(cumulated_amount), 'class': 'number'})
+        columns.append({'name': self.format_value(sml['amount']), 'class': 'number'})
+        columns.append({'name': self.format_value(cumulated_amount_balance), 'class': 'number'})
         return {
             'id': sml['id'],
             'parent_id': 'product_%s' % product.id,
@@ -561,9 +561,9 @@ class ReportStockLedger(models.AbstractModel):
             {'name': credit, 'class': 'number'},
             {'name': balance, 'class': 'number'},
             {'name': cost, 'class': 'number'},
-            {'name': initial_amount, 'class': 'number'},
-            {'name': amount, 'class': 'number'},
-            {'name': total_amount, 'class': 'number'},
+            {'name': self.format_value(initial_amount), 'class': 'number'},
+            {'name': self.format_value(amount), 'class': 'number'},
+            {'name': self.format_value(total_amount), 'class': 'number'},
         ]
         return {
             'id': 'stock_ledger_total_%s' % self.env.company.id,
@@ -604,7 +604,7 @@ class ReportStockLedger(models.AbstractModel):
             else:
                 initial_amount = 0.0
 
-            cost = ''
+            cost = 0.0
             amount = product_sum.get('amount', 0.0)
 
             amount_balance = initial_amount + amount
@@ -724,10 +724,10 @@ class ReportStockLedger(models.AbstractModel):
             {'name': _('Destination')},
             {'name': _('UOM')},
             {'name': _('Date Expected'), 'class': 'date'},
-            {'name': _('Initial Balance'), 'class': 'number'},
-            {'name': _('In'), 'class': 'number'},
-            {'name': _('Out'), 'class': 'number'},
-            {'name': _('Balance'), 'class': 'number'},
+            {'name': _('Initial Balance (QTY)'), 'class': 'number'},
+            {'name': _('In (QTY)'), 'class': 'number'},
+            {'name': _('Out (QTY)'), 'class': 'number'},
+            {'name': _('Balance (QTY)'), 'class': 'number'},
             {'name': _('Cost'), 'class': 'number'},
             {'name': _('Initial Amount'), 'class': 'number'},
             {'name': _('Amount'), 'class': 'number'},
